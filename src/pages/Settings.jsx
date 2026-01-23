@@ -7,7 +7,6 @@ import FadeIn from "../components/ui/FadeIn";
 
 export default function Settings({ user }) {
   const [currency, setCurrency] = useState("₹");
-  const [darkMode, setDarkMode] = useState(false);
   const [prefId, setPrefId] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +24,6 @@ export default function Settings({ user }) {
 
     if (data) {
       setCurrency(data.currency);
-      setDarkMode(data.dark_mode);
       setPrefId(data.id);
     }
   }
@@ -40,7 +38,7 @@ export default function Settings({ user }) {
         .from("user_preferences")
         .update(updated)
         .eq("id", prefId);
-    }
+    } 
     // Insert new row
     else {
       const { data } = await supabase
@@ -55,10 +53,7 @@ export default function Settings({ user }) {
       if (data) setPrefId(data.id);
     }
 
-    // Update local UI state
     setCurrency(updated.currency);
-    setDarkMode(updated.dark_mode);
-
     setLoading(false);
   }
 
@@ -70,10 +65,10 @@ export default function Settings({ user }) {
       <FadeIn>
         <Card>
           <h2 className="font-semibold mb-2">Profile</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className="text-sm text-slate-600">
             Name: {user?.user_metadata?.full_name || "User"}
           </p>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className="text-sm text-slate-600">
             Email: {user?.email}
           </p>
         </Card>
@@ -85,8 +80,8 @@ export default function Settings({ user }) {
           <h2 className="font-semibold mb-4">Preferences</h2>
 
           {/* Currency */}
-          <div className="flex justify-between items-center text-sm mb-4">
-            <label className="text-slate-600 dark:text-slate-300">
+          <div className="flex justify-between items-center text-sm">
+            <label className="text-slate-600">
               Default Currency
             </label>
 
@@ -94,11 +89,10 @@ export default function Settings({ user }) {
               value={currency}
               onChange={(e) =>
                 savePreferences({
-                  currency: e.target.value,
-                  dark_mode: darkMode,
+                  currency: e.target.value
                 })
               }
-              className="border rounded px-2 py-1 bg-white dark:bg-slate-800"
+              className="border rounded px-2 py-1 bg-white"
             >
               <option value="₹">₹ Rupee</option>
               <option value="$">$ Dollar</option>
@@ -106,42 +100,19 @@ export default function Settings({ user }) {
             </select>
           </div>
 
-          {/* Dark Mode */}
-          <div className="flex justify-between items-center text-sm">
-            <label className="text-slate-600 dark:text-slate-300">
-              Dark Mode
-            </label>
-
-            <button
-              onClick={() =>
-                savePreferences({
-                  currency,
-                  dark_mode: !darkMode,
-                })
-              }
-              className={`w-12 h-6 rounded-full transition ${
-                darkMode ? "bg-teal-500" : "bg-slate-300"
-              }`}
-            >
-              <div
-                className={`w-5 h-5 bg-white rounded-full shadow transition ${
-                  darkMode ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-
           {loading && (
-            <p className="text-xs text-slate-400 mt-3">Saving...</p>
+            <p className="text-xs text-slate-400 mt-3">
+              Saving...
+            </p>
           )}
         </Card>
       </FadeIn>
 
       {/* === About === */}
       <FadeIn delay={0.2}>
-        <Card className="text-sm text-slate-600 dark:text-slate-300">
-          NotemySpend v1.0 <br />
-          Personal expense tracker built with React + Supabase.
+        <Card className="text-sm text-slate-600">
+          NotemySpending v1.1 <br />
+          Simple expense tracker built with React + Supabase.
         </Card>
       </FadeIn>
     </div>

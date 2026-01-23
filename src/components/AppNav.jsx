@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +27,63 @@ export default function AppNav({ user }) {
     await supabase.auth.signOut();
     navigate("/login");
   }
+
+  // ===============================
+  // ✅ NEW: Close on ESC key
+  // ===============================
+  useEffect(() => {
+    function handleEsc(e) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    if (open) window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [open]);
+
+  // ===============================
+  // ✅ NEW: Swipe left to close (mobile)
+  // ===============================
+  useEffect(() => {
+    let startX = 0;
+
+    function handleTouchStart(e) {
+      startX = e.touches[0].clientX;
+    }
+
+    function handleTouchMove(e) {
+      if (!open) return;
+      const currentX = e.touches[0].clientX;
+      if (startX - currentX > 60) {
+        setOpen(false);
+      }
+    }
+
+    if (open) {
+      window.addEventListener("touchstart", handleTouchStart);
+      window.addEventListener("touchmove", handleTouchMove);
+    }
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, [open]);
+
+  // ===============================
+  // ✅ NEW: Phone back button closes menu first
+  // ===============================
+  useEffect(() => {
+    if (!open) return;
+
+    window.history.pushState(null, "", window.location.href);
+
+    const handleBack = () => {
+      setOpen(false);
+    };
+
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, [open]);
 
   return (
     <>
@@ -70,24 +127,24 @@ export default function AppNav({ user }) {
               "
             >
               {/* === User Header === */}
-              <div className="p-5 flex items-center gap-3 border-b border-slate-200 dark:border-slate-800">
-                <img
-                  src={avatar}
-                  alt="avatar"
-                  className="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-700"
-                />
-                <div>
-                  <p className="text-xs text-slate-500">Signed in as</p>
-                  <p className="font-semibold">{displayName}</p>
-                </div>
+              {/* === Header with Close Button === */}
+<div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+  
+  {/* User Info */}
+  <div className="flex items-center gap-3">
+    <img
+      src={avatar}
+      alt="avatar"
+      className="w-10 h-10 rounded-full border border-slate-300 dark:border-slate-700"
+    />
+    <div>
+      <p className="text-xs text-slate-500">Signed in as</p>
+      <p className="font-semibold">{displayName}</p>
+    </div>
+  </div>
 
-                <button
-                  onClick={() => setOpen(false)}
-                  className="ml-auto text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                >
-                  ✕
-                </button>
-              </div>
+</div>
+
 
               {/* === Links === */}
               <nav className="p-3 space-y-1 text-sm">

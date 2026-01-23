@@ -11,54 +11,74 @@ export default function AddExpense({ user }) {
 
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [catLoading, setCatLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Load categories
+  // --- Load categories ---
   useEffect(() => {
     async function loadCategories() {
       setCatLoading(true);
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("categories")
         .select("name")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (!error) setCategories(data || []);
+      setCategories(data || []);
       setCatLoading(false);
     }
+
     loadCategories();
   }, [user.id]);
 
-  // Submit expense
+  // --- Save expense ---
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.from("expenses").insert([
-      {
+    if (!amount || !category) {
+      setError("Please enter amount and category");
+      setLoading(false);
+      return;
+    }
+
+    // Auto-create category if not exists
+    const exists = categories.find((c) => c.name === category);
+
+    if (!exists) {
+      await supabase.from("categories").insert({
         user_id: user.id,
-        amount: Number(amount),
-        category,
-        date,
-      },
-    ]);
+        name: category,
+      });
+    }
 
-    if (error) setError(error.message);
-    else navigate("/");
+    // Insert expense
+    const { error } = await supabase.from("expenses").insert({
+      user_id: user.id,
+      amount: Number(amount),
+      category,
+      date,
+    });
 
-    setLoading(false);
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    navigate("/"); // Back to dashboard
   }
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
-      
       <SectionTitle>Add Expense</SectionTitle>
 
       <FadeIn>
@@ -68,7 +88,7 @@ export default function AddExpense({ user }) {
             {/* Amount */}
             <input
               type="number"
-              placeholder="Amount"
+              placeholder="Amount ₹"
               className="w-full border border-slate-300 rounded-lg px-3 py-2
                          focus:ring-2 focus:ring-teal-500 outline-none"
               value={amount}
@@ -76,34 +96,37 @@ export default function AddExpense({ user }) {
               required
             />
 
-            {/* Category */}
-            <select
+            {/* Quick category chips */}
+            <div className="flex flex-wrap gap-2">
+              {categories.slice(0, 6).map((c) => (
+                <button
+                  type="button"
+                  key={c.name}
+                  onClick={() => setCategory(c.name)}
+                  className={`px-3 py-1 rounded-full text-sm border transition ${
+                    category === c.name
+                      ? "bg-teal-500 text-white border-teal-500"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+
+              {catLoading && (
+                <p className="text-sm text-slate-400">Loading...</p>
+              )}
+            </div>
+
+            {/* Manual category input */}
+            <input
+              placeholder="Or type new category"
               className="w-full border border-slate-300 rounded-lg px-3 py-2
                          focus:ring-2 focus:ring-teal-500 outline-none"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               required
-            >
-              <option value="">
-                {catLoading ? "Loading categories..." : "Select Category"}
-              </option>
-              {categories.map((c) => (
-                <option key={c.name} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Manage Categories */}
-            <p className="text-sm text-slate-500">
-              Want to add or edit categories?{" "}
-              <span
-                onClick={() => navigate("/categories")}
-                className="text-teal-600 cursor-pointer hover:underline"
-              >
-                Manage Categories
-              </span>
-            </p>
+            />
 
             {/* Date */}
             <input
@@ -122,7 +145,7 @@ export default function AddExpense({ user }) {
                          font-semibold hover:bg-teal-600 transition
                          disabled:opacity-60"
             >
-              {loading ? "Saving..." : "Add Expense"}
+              {loading ? "Saving..." : "Save Expense"}
             </button>
 
             {error && (
